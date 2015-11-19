@@ -3,6 +3,12 @@
     <head>
         <meta charset="UTF-8">
         <title>Formulário PHP</title>
+        <style> 
+            .err{
+                outline: 1px dashed red;
+                background-color: rgba (255,0,0,0.2);
+            }
+        </style>
     </head>
     <body>
         <h1>Manuseio de Formulário com PHP</h1>
@@ -17,31 +23,58 @@
         
         <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
         
-        Name: <input type="text" name="name"> <br />
+        Nome: <input type="text" name="name" class="<?php isset($nameErr)?"err":"";?>"> <br />
         E-mail: <input type="text" name="email"> <br />
         Website: <input type="text" name="website"> <br />
-        Comment: <textarea name="comment" rows="5" cols="40"></textarea> <br />
+        Mensagem: <textarea name="comment" rows="5" cols="40"></textarea> <br />
 
-        Gender: <br />
-        <input type="radio" name="gender" value="female">Female
-        <input type="radio" name="gender" value="male">Male
+        Gênero: <br />
+        <input type="radio" name="gender" value="female">Feminino
+        <input type="radio" name="gender" value="male">Masculino
         <br />
         
         <input type="submit" value=".:Enviar:." />
         
         </form>
         
-        <?php
-
+       <?php
         $name = $email = $gender = $comment = $website = "";
 
-      if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $name = test_input($_POST["name"]);
-        $email = test_input($_POST["email"]);
-        $website = test_input($_POST["website"]);
-        $comment = test_input($_POST["comment"]);
-        $gender = test_input($_POST["gender"]);
-        }
+      
+$nameErr = $emailErr = $genderErr = $websiteErr = "";
+$name = $email = $gender = $comment = $website = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  if (empty($_POST["name"])) {
+    $nameErr = "Name is required";
+  } else {
+    $name = test_input($_POST["name"]);
+  }
+
+  if (empty($_POST["email"])) {
+    $emailErr = "Email is required";
+  } else {
+    $email = test_input($_POST["email"]);
+  }
+
+  if (empty($_POST["website"])) {
+    $website = "";
+  } else {
+    $website = test_input($_POST["website"]);
+  }
+
+  if (empty($_POST["comment"])) {
+    $comment = "";
+  } else {
+    $comment = test_input($_POST["comment"]);
+  }
+
+  if (empty($_POST["gender"])) {
+    $genderErr = "Gender is required";
+  } else {
+    $gender = test_input($_POST["gender"]);
+  }
+}
 
       function test_input($data) {
         $data = trim($data);
