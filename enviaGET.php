@@ -1,17 +1,17 @@
+<!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
-       <title>Envia dados a partir de GET</title>
+        <title>Envia dados através de GET</title>
     </head>
     <body>
-        <h1>Exemplo de envio - método get</h1>
-        
-        <form action="recebeGET.php" method="post">
-            Nome: <input type="text" name="name"><br>
+        <h1>Exemplo de envio - Método GET</h1>
+        <form action="recebeGET.php" method="get">
+            
+            Name: <input type="text" name="name"><br>
             E-mail: <input type="text" name="email"><br>
+            
             <input type="submit">
         </form>
-
     </body>
 </html>
-

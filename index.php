@@ -2,7 +2,11 @@
 // Definição de variáveis sem valores
 $name = $email = $gender = $comment = $website = "";
 $nameErr = $emailErr = $genderErr = $websiteErr = "";
+
+
+
 //echo $_SERVER["REQUEST_METHOD"] . "<br>";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($_POST["name"])) {
         $nameErr = "Preencher o nome";
@@ -12,6 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $nameErr = "Apenas letras e espaços em branco são permitidos";
         }
     }
+
     if (empty($_POST["email"])) {
         $emailErr = "Preencher o e-mail";
     } else {
@@ -20,6 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $emailErr = "Formato de e-mail inválido";
         }
     }
+
     if (empty($_POST["website"])) {
         $website = "";
     } else {
@@ -28,17 +34,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $websiteErr = "URL inválido";
         }
     }
+
     if (empty($_POST["comment"])) {
         $comment = "";
     } else {
         $comment = test_input($_POST["comment"]);
         $comment = wordwrap($comment, 70);
     }
+
     if (empty($_POST["gender"])) {
         $genderErr = "Gender is required";
     } else {
         $gender = test_input($_POST["gender"]);
     }
+
     /**
      * Envio de e-mail
      */
@@ -50,6 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mensagem .= "Comentários \r\n\n $comment";
     $headers = "From: $name <$email> \r\n" .
             'X-Mailer: PHP/' . phpversion();
+
     //Se não houver erros, envia o e-mail
     if (strlen($nameErr) == 0 &&
         strlen($emailErr) == 0 &&
@@ -62,6 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $statusMail = FALSE;
     //**** Fim da função de envio de e-mail
 }
+
 //Limpeza dos dados de entrada
 function test_input($data) {
     $data = trim($data);
