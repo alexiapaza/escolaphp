@@ -1,7 +1,12 @@
 <?php
 
 //Faz a requisição de dados paraconexão com o BD
-require_once 'dbconfig.php';
+if ($_SERVER['SERVER_ADDR'] == '127.0.0.1')
+    require_once 'dbconfig.php';
+else
+    require_once 'dbconfigHstinger.php';
+//Inclusão da função que envia e-mail
+include_once 'emailConfirma.php';
 /*
  * Conexão com o banco de dados 
  */
@@ -45,29 +50,38 @@ if (isset($_POST['btn'])) {
         $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
         $cod = gerarCodigo();
         //String SQL
-        $sql = "INSERT INTO lista(email,cod,dtcadastro) values (:email, :cod, now() )";
+        $sql = "INSERT INTO lista(email,cod,dtCadastro) "
+                . "values(:email,:cod,now())";
         $parametros = array(':email' => $email,
             ':cod' => $cod);
+        $p = $conn->prepare($sql);
+        $q = $p->execute($parametros);
 
+        /**
+         * Envio de e-mail para confirmação
+         */
+        //Link para ser enviado por e-mail
+        $link = "<a href='http://";
+        $link .= $_SERVER['SERVER_NAME'];
+        $link .= $_SERVER['PHP_SELF'];
+        $link .= "?cod=e&hash=$cod' ";
+        $link .= "title='Clique para confirmar o e-mail'>";
+        $link .= "Clique para confirmar seu e-mail";
+        $link .= "</a>";
 
-        try {//Criação do objeto $conn - conexão
-            $p = $conn->prepare($sql);
-            $q = $p->execute($parametros);
-        } catch (PDOException $pe) {
-            die("Não foi possível inserir no banco $dbname :" . $pe->getMessage());
-        }
+        emailConfirma($email, $link);
 
-//        echo "erro: " . $p->errorCode();
-//        print_r($p->errorInfo());
-//        
-        //Listagem de emails
+        /**
+         * ----------------------------------
+         */
+        //Listagem de e-mails
         header('Location: cadastro.php?cod=listar');
 
         /**
          * Tarefa de casa
-         * Criar um email HTML, enviando um link
+         * Criar um e-mail HTML, enviando um link
          * com o código, para a pessoa clicar
-         * e confirmar seu email
+         * e confirmar seu e-mail
          */
     } else {
         header('Location: index.php');
@@ -76,8 +90,8 @@ if (isset($_POST['btn'])) {
     if ($_GET['cod'] == 'listar') {
         //LISTAGEM DE E-MAILS
         // select * from lista // desaconselhado
-//        $sql = "SELECT email,cod,situacao,dtcadastro,dtatualizacao from lista";
-        $sql = "SELECT * FROM `lista`";
+        $sql = "SELECT email,cod,situacao,dtCadastro,dtAtualizacao "
+                . "from lista";
         $q = $conn->query($sql);
         $q->setFetchMode(PDO::FETCH_ASSOC);
         while ($r = $q->fetch()) {
@@ -88,52 +102,28 @@ if (isset($_POST['btn'])) {
             echo $r['email'] . "\t";
 
             //Link de exclusão
-            echo "<a href='cadastro.php?cod=d&hash=$r[cod]' title='Clique para excluir'>";
+            echo "<a href='cadastro.php?cod=d&hash=$r[cod]' ";
+            echo "title='Clique para excluir'>";
             echo $r['cod'];
-            echo "</a>";
+            echo "</a>" . "\t";
 
-            echo $r['situacao'] . "\t";
-            echo converteDataMySQLPHP($r['dtcadastro']) . "\t";
-            echo converteDataMySQLPHP($r['dtatualizacao']);
+            //Link para ser enviado por e-mail
+            $link = "<a href='" . $_SERVER['PHP_SELF'];
+            $link .= "?cod=e&hash=$r[cod]' ";
+            $link .= "title='Clique para confirmar o e-mail'>";
+            $link .= $r['situacao'] . "\t";
+            $link .= "</a>";
+
+            echo $link;
+
+            echo converteDataMySQLPHP($r['dtCadastro']) . "\t";
+            echo converteDataMySQLPHP($r['dtAtualizacao']);
             echo "</p>\n";
         }
     }
     //Exclusão de um registro
     elseif ($_GET['cod'] == 'd' && isset($_GET['hash'])) {
         $sql = "delete from lista where cod = :hash";
-        $hash = filter_input(INPUT_GET, 'hash', FILTER_SANITIZE_STRING);
-        
-        if ($_GET['cod'] == 'listar') {
-        //LISTAGEM DE E-MAILS
-        // select * from lista // desaconselhado
-//        $sql = "SELECT email,cod,situacao,dtcadastro,dtatualizacao from lista";
-        $sql = "SELECT * FROM `lista`";
-        $q = $conn->query($sql);
-        $q->setFetchMode(PDO::FETCH_ASSOC);
-        while ($r = $q->fetch()) {
-            //desmpilhando os pratos
-            echo "<p style='color:";
-            echo $r['situacao'] ? 'green' : 'red';
-            echo ";'>";
-            echo $r['email'] . "\t";
-
-            //Link de exclusão
-            echo "<a href='cadastro.php?cod=d&hash=$r[cod]' title='Clique para excluir'>";
-            echo $r['cod'];
-            echo "</a>";
-
-            echo $r['situacao'] . "\t";
-            echo converteDataMySQLPHP($r['dtcadastro']) . "\t";
-            echo converteDataMySQLPHP($r['dtatualizacao']);
-            echo "</p>\n";
-        }
-    }
-    
-    //Atualização da situação cadastral
-        //confirmação email
-        
-        elseif ($_GET['cod'] == 'e' && isset($_GET['hash'])) {
-        $sql = "update lista set situacao=1"."dtatualizacao = now() where cod = :hash";
         $hash = filter_input(INPUT_GET, 'hash', FILTER_SANITIZE_STRING);
 
         //echo "<h1>$hash</h1>";
@@ -143,15 +133,26 @@ if (isset($_POST['btn'])) {
 
         header("Location: cadastro.php?cod=listar");
     }
+    //Atualização da situação cadastral
+    //Confirmação de e-mail
+    elseif ($_GET['cod'] == 'e' && isset($_GET['hash'])) {
 
-    //Validação do email
+        $sql = "update lista set situacao=1, "
+                . "dtAtualizacao = now() where cod = :hash";
+
+        $hash = filter_input(INPUT_GET, 'hash', FILTER_SANITIZE_STRING);
+
+        //echo "<h1>$hash</h1>";
+
+        $p = $conn->prepare($sql);
+        $q = $p->execute(array(':hash' => $hash));
+
+        header("Location: cadastro.php?cod=listar");
+    }
+    //Validação do e-mail
 } else {
     //Botão cadastrar não foi pressionado
     //E nem o código foi passado
     //Redireciona para a página inicial
     header('Location: index.php');
 }
-    
-    //Link para ser enviado por email
-    $link = "<a href='http://"; 
-    $link .= $_SERVER ['SERVER_NAME']
